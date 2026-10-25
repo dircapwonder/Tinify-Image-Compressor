@@ -26,9 +26,7 @@ The terminal version uses `optimized_`, `most_optimized_` and `resized_` as pref
 ```
 .
 ├── TinifyImageGUI.py    # Tkinter desktop app (JPG, JPEG, PNG, WebP)
-├── TinifyImageGUI.exe   # Standalone Windows build of the GUI
-├── TinifyTerminal.py    # Command-line version (JPG only)
-└── favicon.ico          # Window icon (bundled into the .exe)
+└──TinifyTerminal.py    # Command-line version (JPG only)
 ```
 
 ## Requirements
