@@ -2,6 +2,8 @@
 
 A small Python project that compresses and resizes images with the [TinyPNG (Tinify) API](https://tinypng.com/developers). It comes in two versions: a desktop app built with Tkinter and a minimal terminal script.
 
+<img width="558" height="627" alt="Image" src="https://github.com/user-attachments/assets/af209ed2-439f-4074-bfc5-e56f9031f8f8" />
+
 ## Features
 
 - Compresses JPG, PNG and WebP images while keeping the original file type
