@@ -128,8 +128,7 @@ class ImageGUI:
         
         #--------Validate API Key--------
         tinify.key = api_key
-        try:
-            
+        try: 
             tinify.validate()
         except tinify.AccountError:
             messagebox.showerror("API ERROR", "Your API Key is not valid!")
