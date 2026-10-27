@@ -7,7 +7,7 @@ A small Python project that compresses and resizes images with the [TinyPNG (Tin
 ## Features
 
 - Compresses JPG, PNG and WebP images while keeping the original file type
-- **Optimized compress:** converts the image to the smallest format (WebP, PNG or JPEG) automatically
+- Optimized compress: converts the image to the smallest format (WebP, PNG or JPEG) automatically
 - Resizes an image to a given width and height (`fit` method, aspect ratio is preserved)
 - Validates the API key before processing and shows your remaining monthly quota (GUI)
 - Saves the result next to the original file, so nothing gets overwritten
