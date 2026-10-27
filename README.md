@@ -10,16 +10,25 @@ A small Python project that compresses and resizes images with the [TinyPNG (Tin
 - Optimized compress: converts the image to the smallest format (WebP, PNG or JPEG) automatically
 - Resizes an image to a given width and height (`fit` method, aspect ratio is preserved)
 - Validates the API key before processing and shows your remaining monthly quota (GUI)
-- Saves the result next to the original file, so nothing gets overwritten
+- Lets you choose where to save the result and what to name it (GUI). The real file extension is always appended automatically, so the extension never changes by accident
 - Ready-to-use Windows `.exe` of the GUI, no Python installation needed
 
 ## Example Output
 
-| Operation | Output file name |
-|:---------:|:----------------:|
-| Compress (same type) | `compressed_<name>.<ext>` |
-| Optimized compress | `optimized_<name>.<best ext>` |
-| Resize | `resized_<name>.<ext>` |
+### GUI
+
+You choose the folder and the file name in the **Save As** dialog. The real extension of the result is added to the end of whatever you type, unless the name already ends with it.
+
+| Result type | You type | Saved as |
+|:-----------:|:--------:|:--------:|
+| PNG | `photo` | `photo.png` |
+| PNG | `photo.png` | `photo.png` |
+| PNG | `photo.jpg` | `photo.jpg.png` |
+| JPG | `photo` | `photo.jpg` |
+
+In **Optimized compress**, the extension is taken from the format Tinify actually returns (WebP, PNG or JPEG).
+
+### Terminal
 
 The terminal version uses `optimized_`, `most_optimized_` and `resized_` as prefixes.
 
@@ -80,6 +89,7 @@ python TinifyImageGUI.py
 2. Click **Select Image** and choose a file
 3. Pick **Compress Image** or **Resize Image** and adjust the settings
 4. Click **Start Processing**
+5. In the **Save As** window, choose the folder and type a file name. The real extension is added automatically
 
 ### Windows Executable
 
@@ -103,22 +113,24 @@ The `.exe` is built with [PyInstaller](https://pyinstaller.org/):
 
 ```
 pip install pyinstaller
-python -m PyInstaller TinifyImageGUI.py --onefile --noconsole --icon=favicon.ico --add-data "favicon.ico;."
+python -m PyInstaller TinifyImageGUI.py --onefile --noconsole --icon=favicon.ico --add-data "favicon.ico;." --collect-data tinify
 ```
 
 - `--icon` sets the icon of the `.exe` file itself
 - `--add-data` bundles `favicon.ico` into the executable, so the window icon also works when the `.exe` is moved to another folder or computer
+- `--collect-data tinify` bundles the certificate file (`cacert.pem`) that the `tinify` library needs for HTTPS. Without it the `.exe` cannot connect to the API, even though the script works fine in Python
 - On Linux/macOS use `:` instead of `;` in `--add-data`
 
 The finished `.exe` is created in the `dist` folder. The build also creates a `build` folder and a `TinifyImageGUI.spec` file. These are temporary build files and are not part of the project, so they are not included in this repository.
 
 ## How It Works
 
-- **API key check:** the GUI calls `tinify.validate()` first, so a wrong key fails fast with a clear message.
+- **API key check:** the GUI calls `tinify.validate()` first, so a wrong key fails fast with a clear message. An invalid key and a connection problem show different error messages.
 - **Compression:** the image is uploaded with `tinify.from_file()` and the result is saved with `to_file()`.
-- **Optimized compress:** `convert()` is given a list of types (`image/webp`, `image/png`, `image/jpeg`) and Tinify returns the smallest one. The file extension is then fixed to match the real output type.
+- **Optimized compress:** `convert()` is given a list of types (`image/webp`, `image/png`, `image/jpeg`) and Tinify returns the smallest one. The real extension of that result is then appended to the name you typed.
 - **Resize:** uses the `fit` method, which scales the image to fit inside the given width and height without cropping or stretching.
-- **Quota:** the remaining limit is calculated from `tinify.compression_count`.
+- **Save name:** the extension of the original file (or the real output type in optimized mode) is appended to your file name, unless the name already ends with it.
+- **Quota:** the remaining limit is calculated from `tinify.compression_count`. (It's based on a free plan, which is 500)
 
 ## Limitations
 
@@ -126,13 +138,14 @@ The finished `.exe` is created in the `dist` folder. The build also creates a `b
 - **Free plan assumed:** the remaining quota in the GUI is calculated from a fixed limit of 500.
 - **Windows only:** the `.exe` is built for Windows. On Linux and macOS, run the `.py` files directly.
 - **GUI freezes while processing:** the API call runs on the main thread, so the window does not respond until it finishes.
+- **Overwrite warning:** the Save As dialog checks the name you typed, but the real extension is added afterwards, so an existing file with the final name may be overwritten without a warning.
 
 ## Ideas for Improvement
 
 - Support PNG and WebP in the terminal version
 - Run the API call in a separate thread so the GUI stays responsive
 - Process multiple images or a whole folder at once
-- Let the user choose the output folder and file name
+- ~~Let the user choose the output folder and file name~~
 - Show the original and compressed file sizes after processing
 - Add a "Scale by percentage" option for resizing
 

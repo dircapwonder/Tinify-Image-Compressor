@@ -9,13 +9,18 @@ def icon(name):
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, name)
 
+def add_ext(path, extension):
+    if not path.lower().endswith(extension.lower()):
+        path += extension
+    return path    
+
 class ImageGUI:
     def __init__(self, app):
         self.app = app
         self.app.title("Tinify Image Compressor GUI")
         self.app.geometry("560x600")
         try:
-            self.app.iconbitmap("favicon.ico")
+            self.app.iconbitmap(icon("favicon.ico"))
         except tk.TclError:
             pass
         self.selected_file_path = ""
@@ -23,7 +28,7 @@ class ImageGUI:
         #------------------------------1.) BASICS------------------------------
         #---------------API ENTRY---------------
         tk.Label(app, text="Tinify API Key:", font=("Arial", 10, "bold"), bg="ivory3").pack(anchor="w", pady=5, padx=5)
-        self.enter_api = tk.Entry(app, show="5", width=40)
+        self.enter_api = tk.Entry(app, show="#", width=40)
         self.enter_api.pack(anchor="w", pady=5, padx=5)
          
         #---------------IMAGE SELECT---------------
@@ -122,24 +127,30 @@ class ImageGUI:
                 return
         
         #--------Validate API Key--------
+        tinify.key = api_key
         try:
-            tinify.key = api_key
+            
             tinify.validate()
-        except tinify.Error:
+        except tinify.AccountError:
             messagebox.showerror("API ERROR", "Your API Key is not valid!")
-            return        
+            return
+        except tinify.ConnectionError as e:
+            messagebox.showerror("Connection ERROR", f"Could not connect to Tinify:\n{e}")
+            return
+        except tinify.Error as e:
+            messagebox.showerror("API ERROR", f"Tinify error:\n{e}")
+            return    
         
         folder = os.path.dirname(self.selected_file_path)
         name, ext = os.path.splitext(os.path.basename(self.selected_file_path))
 
-        if self.op.get() == 2:
-            prefix = "resized_"
-        elif self.compress_c.get() == "optimized":
-            prefix = "optimized_"
-        else:
-            prefix = "compressed_"
-
-        save_path = os.path.join(folder, f"{prefix}{name}{ext}")       
+        save_path = filedialog.asksaveasfilename(
+            title="Save As",
+            initialdir=folder,
+            initialfile=name,   
+        )
+        if not save_path:    
+            return
         
         #---------------Processing---------------
         try:
@@ -148,23 +159,18 @@ class ImageGUI:
             if self.op.get() == 1:
                 #CONVERT AND COMPRESS
                 if self.compress_c.get() == "optimized":
-                    converted = source.convert(type=["image/webp","image/png", "image/jpeg"])
-                    #FIX EXTENSION TO MATCH THE REAL OUTPUT TYPE
-                    save_path = os.path.splitext(save_path)[0] + "." + converted.result().extension
+                    converted = source.convert(type=["image/webp", "image/png", "image/jpeg"])
+                    save_path = add_ext(save_path, "." + converted.result().extension)
                     converted.to_file(save_path)
                 #JUST COMPRESS
                 else:
-                    source.to_file(save_path)
+                    source.to_file(add_ext(save_path, ext))
             #RESIZE
             elif self.op.get() == 2:
-                resized = source.resize(
-                    method = "fit",
-                    width = new_w,
-                    height = new_h,
-                )
-                resized.to_file(save_path)
+                resized = source.resize(method="fit", width=new_w, height=new_h)
+                resized.to_file(add_ext(save_path, ext))
             messagebox.showinfo("Completed", f"Process completed!\nYour remaining limit for this month: {500 - tinify.compression_count}")
-  
+
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
             
