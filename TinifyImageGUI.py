@@ -58,10 +58,11 @@ class ImageGUI:
         self.compress_c = tk.StringVar(value="same") #Default Option
         
         #SAME TYPE
-        tk.Radiobutton(self.compress_f, text="Keep the Image Type Same and Compress",font=("Arial", 10),bg="ivory3", variable=self.compress_c, value="same").pack(anchor="w")
+        self.rb = tk.Radiobutton(self.compress_f, text="Keep the Image Type Same and Compress",font=("Arial", 10),bg="ivory3", variable=self.compress_c, value="same")
+        self.rb.pack(anchor="w")
         #OPTIMIZED
-        tk.Radiobutton(self.compress_f, text="Optimized Compress(Different Image Type)",font=("Arial", 10),bg="ivory3",variable=self.compress_c, value="optimized").pack(anchor="w")
-        
+        self.ob = tk.Radiobutton(self.compress_f, text="Optimized Compress(Different Image Type)",font=("Arial", 10),bg="ivory3",variable=self.compress_c, value="optimized")
+        self.ob.pack(anchor="w")
         #---------------RESIZE FRAME---------------
         self.resize_f = tk.LabelFrame(app, text="Resize Settings",font=("Arial", 10),bg="ivory3", padx=15, pady=10)
         
@@ -141,8 +142,8 @@ class ImageGUI:
             return
         
         #Disabling buttons
-        self.select_btn.config(state="disabled")
-        self.p_button.config(state="disabled")
+        self.buttons_state("disabled")
+
         
         #Actual Threading
         t1 = Thread(target=self.work, args=(api_key, save_path, ext, new_w, new_h))
@@ -178,15 +179,30 @@ class ImageGUI:
         except Exception as e:
             self.app.after(0, self.failed, f"An error occurred:\n{e}") 
     
+    def buttons_state(self, state):
+        buts = [
+            self.p_button,
+            self.select_btn,
+            self.choice_cbtn,
+            self.choice_rbtn,
+            self.rb,
+            self.ob,
+            self.enter_api,
+            self.enter_w,
+            self.enter_h,            
+        ]
+        for s in buts:
+            s.config(state=state)
+    
+    
+    
     def finished(self, message):
-        #Buttons enabled again
-        self.select_btn.config(state="normal")        
-        self.p_button.config(state="normal")        
+        #Buttons enabled again        
+        self.buttons_state("normal")        
         messagebox.showinfo("Completed", message)
     
     def failed(self, message):
-        self.select_btn.config(state="normal")
-        self.p_button.config(state="normal")        
+        self.buttons_state("normal")
         messagebox.showerror("Error", message)        
         
 if __name__ == "__main__":
