@@ -11,6 +11,10 @@ A small Python project that compresses and resizes images with the [TinyPNG (Tin
 - Resizes an image to a given width and height (`fit` method, aspect ratio is preserved)
 - Validates the API key before processing and shows your remaining monthly quota (GUI)
 - Lets you choose where to save the result and what to name it (GUI). The real file extension is always appended automatically, so the extension never changes by accident
+- The window stays responsive while an image is being processed, because the API call runs in a background thread (GUI)
+- The **Start Processing** and **Select Image** buttons are disabled during processing, so you cannot start a second job or change the file halfway (GUI)
+- The **Save As** dialog has a file type filter for JPG, PNG and WebP (GUI)
+- Clear, separate error messages for an invalid API key, a connection problem and other errors (GUI)
 - Ready-to-use Windows `.exe` of the GUI, no Python installation needed
 
 ## Example Output
@@ -38,7 +42,8 @@ The terminal version uses `optimized_`, `most_optimized_` and `resized_` as pref
 .
 ├── TinifyImageGUI.py    # Tkinter desktop app (JPG, JPEG, PNG, WebP)
 ├── TinifyTerminal.py    # Command-line version (JPG only)
-└── favicon.ico          # Window icon (bundled into the .exe)
+├── favicon.ico          # Window icon (bundled into the .exe)
+└── .gitignore           # Keeps build files (build, dist, .spec) out of the repository
 ```
 
 ## Requirements
@@ -90,10 +95,13 @@ python TinifyImageGUI.py
 3. Pick **Compress Image** or **Resize Image** and adjust the settings
 4. Click **Start Processing**
 5. In the **Save As** window, choose the folder and type a file name. The real extension is added automatically
+6. Wait for the **Completed** message. The window stays usable, and the buttons are enabled again when the process finishes
 
 ### Windows Executable
 
 If you don't have Python installed, download `TinifyImageGUI.exe` from the [latest release](https://github.com/dircapwonder/Tinify-Image-Compressor/releases/latest) and double-click it. It works exactly like the GUI version above.
+
+The `.exe` is only distributed through the Releases page and is not stored in the repository itself.
 
 Windows SmartScreen or your antivirus may warn you the first time, because the app is not code-signed. This is common for unsigned PyInstaller builds. If you prefer, you can read the source and run the `.py` file instead.
 
@@ -121,11 +129,12 @@ python -m PyInstaller TinifyImageGUI.py --onefile --noconsole --icon=favicon.ico
 - `--collect-data tinify` bundles the certificate file (`cacert.pem`) that the `tinify` library needs for HTTPS. Without it the `.exe` cannot connect to the API, even though the script works fine in Python
 - On Linux/macOS use `:` instead of `;` in `--add-data`
 
-The finished `.exe` is created in the `dist` folder. The build also creates a `build` folder and a `TinifyImageGUI.spec` file. These are temporary build files and are not part of the project, so they are not included in this repository.
+The finished `.exe` is created in the `dist` folder. The build also creates a `build` folder and a `TinifyImageGUI.spec` file. These are temporary build files, so `build/`, `dist/` and `*.spec` are listed in `.gitignore` and are not part of the repository. The finished `.exe` is uploaded to the Releases page instead.
 
 ## How It Works
 
-- **API key check:** the GUI calls `tinify.validate()` first, so a wrong key fails fast with a clear message. An invalid key and a connection problem show different error messages.
+- **Threading:** everything that talks to the user (input checks, error dialogs, the **Save As** window) runs on the main thread. Only the slow network work (API key validation, upload, compression, saving) runs in a background thread. When it finishes, the result is handed back to the main thread with `after()`, because Tkinter is not thread-safe.
+- **API key check:** the worker thread calls `tinify.validate()` first, so a wrong key fails fast with a clear message. An invalid key and a connection problem show different error messages.
 - **Compression:** the image is uploaded with `tinify.from_file()` and the result is saved with `to_file()`.
 - **Optimized compress:** `convert()` is given a list of types (`image/webp`, `image/png`, `image/jpeg`) and Tinify returns the smallest one. The real extension of that result is then appended to the name you typed.
 - **Resize:** uses the `fit` method, which scales the image to fit inside the given width and height without cropping or stretching.
@@ -137,13 +146,14 @@ The finished `.exe` is created in the `dist` folder. The build also creates a `b
 - **Terminal version is JPG only:** the `.jpg` extension is hardcoded, and there is no error handling for missing files or API errors.
 - **Free plan assumed:** the remaining quota in the GUI is calculated from a fixed limit of 500.
 - **Windows only:** the `.exe` is built for Windows. On Linux and macOS, run the `.py` files directly.
-- **GUI freezes while processing:** the API call runs on the main thread, so the window does not respond until it finishes.
+- **No progress indicator:** the window stays responsive during processing, but there is no progress bar. You only see the result message when it finishes.
 - **Overwrite warning:** the Save As dialog checks the name you typed, but the real extension is added afterwards, so an existing file with the final name may be overwritten without a warning.
 
 ## Ideas for Improvement
 
 - Support PNG and WebP in the terminal version
-- Run the API call in a separate thread so the GUI stays responsive
+- ~~Run the API call in a separate thread so the GUI stays responsive~~
+- Add a progress indicator while processing
 - Process multiple images or a whole folder at once
 - ~~Let the user choose the output folder and file name~~
 - Show the original and compressed file sizes after processing
