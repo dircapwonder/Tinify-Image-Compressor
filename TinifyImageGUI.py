@@ -1,8 +1,9 @@
 import os, sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from setuptools import Extension
 import tinify
-
+from threading import Thread
 
 def icon(name):
     #Return the path of a bundled file (works as .py and as PyInstaller .exe)
@@ -76,7 +77,7 @@ class ImageGUI:
         self.compress_f.pack(fill="x", padx=15, pady=15)
         
         #---------------PROCESSING BUTTON---------------
-        self.p_button = tk.Button(app, text="Start Processing",font=("Arial", 20, "bold"),bg="honeydew4", fg="white", height=2, width=80, command=self.process)
+        self.p_button = tk.Button(app, text="Start Processing",font=("Arial", 20, "bold"),bg="honeydew4", fg="white", height=2, width=80, command=self.start_thread)
         self.p_button.pack(anchor="w", pady=45, padx=5)
     
     #------------------------------3.) PROCESS------------------------------
@@ -98,16 +99,18 @@ class ImageGUI:
             self.selected_file_path = file_path
             self.file_label.config(text=os.path.basename(file_path), fg="green")        
     
-    #---------------COMPRESS & RESIZE & API CALL---------------
-    def process(self):
+    def start_thread(self):       
         api_key = self.enter_api.get().strip()
+        
         if not api_key:
             messagebox.showerror("ERROR", "Please enter your Tinify API Key!")
             return
         if not self.selected_file_path:
             messagebox.showerror("ERROR", "Please choose an image to process!")
             return
-
+        
+        new_w = None
+        new_h = None
         if self.op.get() == 2:
             w = self.enter_w.get().strip()
             h = self.enter_h.get().strip()
@@ -125,54 +128,66 @@ class ImageGUI:
             if new_w <= 0 or new_h <= 0:
                 messagebox.showerror("ERROR", "Please enter positive width and height!")
                 return
-        
-        #--------Validate API Key--------
-        tinify.key = api_key
-        try: 
-            tinify.validate()
-        except tinify.AccountError:
-            messagebox.showerror("API ERROR", "Your API Key is not valid!")
-            return
-        except tinify.ConnectionError as e:
-            messagebox.showerror("Connection ERROR", f"Could not connect to Tinify:\n{e}")
-            return
-        except tinify.Error as e:
-            messagebox.showerror("API ERROR", f"Tinify error:\n{e}")
-            return    
-        
         folder = os.path.dirname(self.selected_file_path)
         name, ext = os.path.splitext(os.path.basename(self.selected_file_path))
 
         save_path = filedialog.asksaveasfilename(
             title="Save As",
             initialdir=folder,
-            initialfile=name,   
+            initialfile=name,
+            filetypes=[("Supported Image Types", "*.jpg *.jpeg *.png *.webp")],   
         )
         if not save_path:    
             return
         
-        #---------------Processing---------------
+        #Disabling buttons
+        self.select_btn.config(state="disabled")
+        self.p_button.config(state="disabled")
+        
+        #Actual Threading
+        t1 = Thread(target=self.work, args=(api_key, save_path, ext, new_w, new_h))
+        t1.start()
+    
+    #---------------COMPRESS & RESIZE & API CALL---------------   
+    def work(self, api_key, save_path, ext, new_w, new_h):
         try:
+            tinify.key = api_key
+            tinify.validate()
+
             source = tinify.from_file(self.selected_file_path)
-            #COMPRESS
+            # COMPRESS
             if self.op.get() == 1:
-                #CONVERT AND COMPRESS
                 if self.compress_c.get() == "optimized":
                     converted = source.convert(type=["image/webp", "image/png", "image/jpeg"])
                     save_path = add_ext(save_path, "." + converted.result().extension)
                     converted.to_file(save_path)
-                #JUST COMPRESS
                 else:
                     source.to_file(add_ext(save_path, ext))
-            #RESIZE
-            elif self.op.get() == 2:
+            # RESIZE
+            else:
                 resized = source.resize(method="fit", width=new_w, height=new_h)
                 resized.to_file(add_ext(save_path, ext))
-            messagebox.showinfo("Completed", f"Process completed!\nYour remaining limit for this month: {500 - tinify.compression_count}")
 
+            remaining = 500 - tinify.compression_count
+            self.app.after(0, self.finished, f"Process completed!\nYour remaining limit for this month: {remaining}")
+
+        except tinify.AccountError:
+            self.app.after(0, self.failed, "Your API Key is not valid!")
+        except tinify.ConnectionError as e:
+            self.app.after(0, self.failed, f"Could not connect to Tinify:\n{e}")
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
-            
+            self.app.after(0, self.failed, f"An error occurred:\n{e}") 
+    
+    def finished(self, message):
+        #Buttons enabled again
+        self.select_btn.config(state="normal")        
+        self.p_button.config(state="normal")        
+        messagebox.showinfo("Completed", message)
+    
+    def failed(self, message):
+        self.select_btn.config(state="normal")
+        self.p_button.config(state="normal")        
+        messagebox.showerror("Error", message)        
         
 if __name__ == "__main__":
     app = tk.Tk()
