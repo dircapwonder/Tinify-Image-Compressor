@@ -43,6 +43,7 @@ The terminal version uses `optimized_`, `most_optimized_` and `resized_` as pref
 ├── TinifyImageGUI.py    # Tkinter desktop app (JPG, JPEG, PNG, WebP)
 ├── TinifyTerminal.py    # Command-line version (JPG only)
 ├── favicon.ico          # Window icon (bundled into the .exe)
+├── LICENSE              # MIT License
 └── .gitignore           # Keeps build files (build, dist, .spec) out of the repository
 ```
 
@@ -164,6 +165,10 @@ The finished `.exe` is created in the `dist` folder. The build also creates a `b
 
 - Image compression by [TinyPNG / Tinify](https://tinypng.com/)
 
+## License
+
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify and share it, as long as the license and copyright notice are kept.
+
 ## Disclaimer
 
-This project is for personal and educational use. It is not affiliated with TinyPNG or Tinify.
+This project is not affiliated with TinyPNG or Tinify. Use of the Tinify API is subject to TinyPNG's own terms.
