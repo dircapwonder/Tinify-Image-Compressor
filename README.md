@@ -12,7 +12,7 @@ A small Python project that compresses and resizes images with the [TinyPNG (Tin
 - Validates the API key before processing and shows your remaining monthly quota (GUI)
 - Lets you choose where to save the result and what to name it (GUI). The real file extension is always appended automatically, so the extension never changes by accident
 - The window stays responsive while an image is being processed, because the API call runs in a background thread (GUI)
-- The **Start Processing** and **Select Image** buttons are disabled during processing, so you cannot start a second job or change the file halfway (GUI)
+- The buttons, the operation options (radio buttons) and the input fields (API key, width, height) are disabled during processing, so you cannot start a second job or change the file or settings halfway (GUI)
 - The **Save As** dialog has a file type filter for JPG, PNG and WebP (GUI)
 - Clear, separate error messages for an invalid API key, a connection problem and other errors (GUI)
 - Ready-to-use Windows `.exe` of the GUI, no Python installation needed
@@ -95,7 +95,7 @@ python TinifyImageGUI.py
 3. Pick **Compress Image** or **Resize Image** and adjust the settings
 4. Click **Start Processing**
 5. In the **Save As** window, choose the folder and type a file name. The real extension is added automatically
-6. Wait for the **Completed** message. The window stays usable, and the buttons are enabled again when the process finishes
+6. Wait for the **Completed** message. The window stays usable, but the buttons, options and input fields are locked until the process finishes, then they are enabled again (also after an error)
 
 ### Windows Executable
 
@@ -134,6 +134,7 @@ The finished `.exe` is created in the `dist` folder. The build also creates a `b
 ## How It Works
 
 - **Threading:** everything that talks to the user (input checks, error dialogs, the **Save As** window) runs on the main thread. Only the slow network work (API key validation, upload, compression, saving) runs in a background thread. When it finishes, the result is handed back to the main thread with `after()`, because Tkinter is not thread-safe.
+- **Locked controls:** while the worker thread runs, the buttons, radio buttons and input fields (API key, width, height) are disabled with a single helper method. The worker thread reads the selected options (`compress` or `resize`, `same` or `optimized`), so they must not change during the job. The controls are enabled again when the job finishes or fails.
 - **API key check:** the worker thread calls `tinify.validate()` first, so a wrong key fails fast with a clear message. An invalid key and a connection problem show different error messages.
 - **Compression:** the image is uploaded with `tinify.from_file()` and the result is saved with `to_file()`.
 - **Optimized compress:** `convert()` is given a list of types (`image/webp`, `image/png`, `image/jpeg`) and Tinify returns the smallest one. The real extension of that result is then appended to the name you typed.
